@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "78887525751",
+    "project_id": "voice-auth-4d5e5",
+    "storage_bucket": "voice-auth-4d5e5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78887525751:android:022c59b51153c2a3531572",
+        "android_client_info": {
+          "package_name": "com.voiceauthapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpywpVFiapQbsF8p18l8GXwbLzznViOF0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
