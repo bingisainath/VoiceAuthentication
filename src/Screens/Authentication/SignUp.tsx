@@ -2,12 +2,11 @@ import React, {useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
-  Image,
-  Pressable,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,6 +16,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {Colors} from '../../theme/Colors';
+import {encryptPassword} from '../../helpers/helperFunctions';
 
 export default function SignUpForm({navigation}) {
   const [click, setClick] = useState(false);
@@ -24,27 +24,6 @@ export default function SignUpForm({navigation}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // const SignUp = async () => {
-  //   await auth()
-  //     .createUserWithEmailAndPassword(email, password)
-  //     .then(() => {
-  //       console.log('User account created & signed in!');
-  //       navigation.replace('Home');
-  //     })
-  //     .catch(error => {
-  //       if (error.code === 'auth/email-already-in-use') {
-  //         console.log('That email address is already in use!');
-  //       }
-
-  //       if (error.code === 'auth/invalid-email') {
-  //         console.log('That email address is invalid!');
-  //       }
-
-  //       console.error(error);
-  //       navigation.replace('LoginForm');
-  //     });
-  // };
 
   const SignUp = async () => {
     setLoading(true);
@@ -55,24 +34,27 @@ export default function SignUpForm({navigation}) {
         password,
       );
 
-      // console.log(" userCredential : ",userCredential);
-      
-
       // Get user ID
       const userId = userCredential.user.uid;
 
-      // console.log(" userCredential : ",userId);
+      const encryptedPass = await encryptPassword(password); // encrypting the password
 
-      // Store user data in Firestore
+      // Prepare user data
+      const userData = {
+        userId: userId,
+        email: email,
+        password: encryptedPass.message, // Storing encrypted password in fireStore
+        username: userName,
+        createdAt: firestore.FieldValue.serverTimestamp(), // Automatically set server time
+        voiceProfileId: null, // Optional, can be null initially
+        voiceRegisterOrNot: false, // Default to false if not provided
+      };
+
+      // Save user data in Firestore
       await firestore()
-        .collection('Users') // Firestore collection name
-        .doc(userId) // Document with userId as identifier
-        .set({
-          email: email,
-          userName: userName,
-          createdAt: firestore.FieldValue.serverTimestamp(), // Add server timestamp
-          voiceProfileIds: [],
-        });
+        .collection('users') // 'users' is the collection name
+        .doc(email) // Using email as the document ID
+        .set(userData);
 
       console.log('User account created and data saved in Firestore!');
       setLoading(false);
@@ -93,69 +75,83 @@ export default function SignUpForm({navigation}) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* <Image source={logo} style={styles.image} resizeMode="contain" /> */}
-      <Text style={styles.title}>Register</Text>
-      <View style={styles.inputView}>
-        <TextInput
-          style={styles.input}
-          placeholder="USERNAME"
-          value={userName}
-          onChangeText={setUserName}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="EMAIL"
-          value={email}
-          onChangeText={setEmail}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="PASSWORD"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-      </View>
-
-      <View style={styles.buttonView}>
-        {loading ? (
-          <View style={styles.button}>
-            <ActivityIndicator size={25} color={Colors.black} />
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <SafeAreaView style={styles.container}>
+          {/* <Image source={logo} style={styles.image} resizeMode="contain" /> */}
+          <Text style={styles.title}>Register</Text>
+          <View style={styles.inputView}>
+            <TextInput
+              style={styles.input}
+              placeholder="USERNAME"
+              value={userName}
+              onChangeText={setUserName}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="EMAIL"
+              value={email}
+              onChangeText={setEmail}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="PASSWORD"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
           </View>
-        ) : (
-          <TouchableOpacity style={styles.button} onPress={SignUp}>
-            <Text style={styles.buttonText}>REGISTER</Text>
-          </TouchableOpacity>
-        )}
-        {/* <TouchableOpacity style={styles.button} onPress={SignUp}>
+
+          <View style={styles.buttonView}>
+            {loading ? (
+              <View style={styles.button}>
+                <ActivityIndicator size={25} color={Colors.black} />
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.button} onPress={SignUp}>
+                <Text style={styles.buttonText}>REGISTER</Text>
+              </TouchableOpacity>
+            )}
+            {/* <TouchableOpacity style={styles.button} onPress={SignUp}>
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity> */}
-      </View>
+          </View>
 
-      {/* <Text style={styles.footerText}>
+          {/* <Text style={styles.footerText}>
         <Text style={styles.signup}> login</Text>
       </Text> */}
 
-      <TouchableOpacity
-        style={styles.footerText}
-        onPress={() => {
-          navigation.navigate('LoginForm');
-        }}>
-        <Text style={{color: 'gray', fontSize: 13}}>Old user?{'   '}</Text>
-        <Text style={styles.signup}>Login</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+          <TouchableOpacity
+            style={styles.footerText}
+            onPress={() => {
+              navigation.navigate('EmailForm');
+            }}>
+            <Text style={{color: 'gray', fontSize: 13}}>Old user?{'   '}</Text>
+            <Text style={styles.login}>Login</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    // justifyContent: 'space-between',
+  },
   container: {
     flex: 1,
     alignItems: 'center',
@@ -244,15 +240,14 @@ const styles = StyleSheet.create({
     height: 40,
   },
   footerText: {
-    // textAlign: 'center',
     position: 'absolute',
     flexDirection: 'row',
-    // color: 'gray',
     marginTop: 10,
     bottom: 40,
   },
-  signup: {
+  login: {
     color: '#80cde0',
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });

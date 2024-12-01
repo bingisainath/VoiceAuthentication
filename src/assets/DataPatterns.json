@@ -1,0 +1,33 @@
+// User data in Redux
+{
+  "email": "new@gmail.com",
+  "name": "",
+  "profile_pic": "",
+  "uid": ""
+}
+
+//Firebase user Data
+{
+  "_data":{
+     "createdAt":[
+        "Object"
+     ],
+     "email":"sai@gmail.com",
+     "password":"U2FsdGVkX1/cIDDiMxLRTyx8zajxh9O2fvFS9CPgx2g=",
+     "userId":"r5GncWN5mFccGnCCH2yRcmYZpE32",
+     "username":"sai",
+     "voiceProfileId":{
+        "createdDateTime":"2024-12-01T18:32:26.280Z",
+        "enrollmentStatus":"Enrolling",
+        "enrollmentsCount":0,
+        "enrollmentsLength":0,
+        "enrollmentsSpeechLength":0,
+        "lastUpdatedDateTime":null,
+        "locale":"en-us",
+        "modelVersion":null,
+        "profileId":"5780402a-e899-4cc1-b710-a3fee5b04c80",
+        "remainingEnrollmentsSpeechLength":20
+     },
+     "voiceRegisterOrNot":true
+  },
+}

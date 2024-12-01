@@ -5,7 +5,7 @@ const initialState = {
   name: '',
   email: '',
   profile_pic: '',
-  // myPeerData: {},
+  voiceData: {},
 };
 
 export const userSlice = createSlice({
@@ -18,6 +18,9 @@ export const userSlice = createSlice({
       state.email = action?.payload?.email;
       // state.profile_pic = action.payload.photoURL;
     },
+    setVoiceData: (state, action) => {
+      state.voiceData = action.payload;
+    },
     logout: (state, action) => {
       state.uid = '';
       state.name = '';
@@ -28,6 +31,6 @@ export const userSlice = createSlice({
 });
 
 // Action creators are generated for each case reducer function
-export const {setUser, logout} = userSlice.actions;
+export const {setUser, logout, setVoiceData} = userSlice.actions;
 
 export default userSlice.reducer;

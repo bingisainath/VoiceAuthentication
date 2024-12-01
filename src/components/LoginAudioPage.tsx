@@ -15,9 +15,12 @@ import Svg, {Path} from 'react-native-svg';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import auth from '@react-native-firebase/auth';
 import {useToast} from 'react-native-toast-notifications';
+import firestore from '@react-native-firebase/firestore';
 
 import {useVoiceAuthentication} from '../hook/useVoiceAuthentication'; // Assuming this hook is correctly implemented for Azure API
 import {Colors} from '../theme/Colors';
+import {decryptPassword} from '../helpers/helperFunctions';
+import {useSelector} from 'react-redux';
 // import Navigation from '../navigation';
 
 // const baseApi = 'https://centralindia.api.cognitive.microsoft.com'; // Replace with your Azure Cognitive Service endpoint
@@ -51,11 +54,12 @@ const LoginAudioScreen = ({navigation, route}) => {
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState('00:00:00');
   const [audioPath, setAudioPath] = useState(null);
-  const [playback, setPlayback] = useState(false);
   const [currentMetering, setCurrentMetering] = useState(0);
   const [mode, setMode] = useState('enroll'); // Mode to decide between enroll/verify
   const [recordDuration, setRecordDuration] = useState(0); // Track the recording duration
   const [loading, setLoading] = useState(false);
+
+  const user = useSelector(state => state.user);
 
   const toast = useToast();
 
@@ -105,12 +109,6 @@ const LoginAudioScreen = ({navigation, route}) => {
       await RNFS.mkdir(directoryPath);
       const path = `${directoryPath}/recorded_audio.m4a`;
 
-      console.log('==================path ============');
-      console.log(path);
-      console.log('====================================');
-
-      // setAudioPath(path);
-
       await recorderPlayer.startRecorder(path);
       recorderPlayer.addRecordBackListener(e => {
         setRecordTime(recorderPlayer.mmssss(Math.floor(e.currentPosition)));
@@ -142,47 +140,19 @@ const LoginAudioScreen = ({navigation, route}) => {
     recorderPlayer.removeRecordBackListener();
     setRecordTime('00:00:00');
     setCurrentMetering(0);
-
-    console.log('===========recordDuration===========');
-    console.log(recordDuration);
-    console.log(recordTime);
-    console.log(audioPath);
-    console.log('====================================');
-
-    // if (recordDuration < 5) {
-    //   Alert.alert(
-    //     'Recording Too Short',
-    //     'Please record audio for at least 5 seconds to proceed.',
-    //   );
-    //   setRecordDuration(0); // Reset the duration
-    //   return;
-    // }
-
-    // const directoryPath = `${RNFS.DocumentDirectoryPath}/recordings`;
-    // const path = `${directoryPath}/recorded_audio.m4a`;
-
     if (path) {
-      console.log('============== if ==========');
-      console.log(audioPath);
-      console.log(recordDuration);
-      console.log('====================================');
       verifyProfile(path);
-      // if (recordDuration < 5) {
-      //   Alert.alert(
-      //     'Recording Too Short',
-      //     'Please record audio for at least 5 seconds to proceed.',
-      //   );
-      //   setRecordDuration(0); // Reset the duration
-      //   return; // Exit early
-      // } else {
-      //   verifyProfile(path); // Automatically start verification after stopping the recording
-      // }
     } else {
       Alert.alert('Recording Error', 'Failed to record the audio properly.');
     }
   };
 
   const verifyProfile = async path => {
+    if (!user?.voiceData?.voiceProfileId) {
+      Alert.alert('Verification Failed', 'Voice input does not match.');
+      return;
+    }
+
     setRecordDuration(0);
     setLoading(true);
     console.log('Verification path, ', path);
@@ -191,24 +161,18 @@ const LoginAudioScreen = ({navigation, route}) => {
       if (path) {
         const base64Audio = await RNFS.readFile(path, 'base64');
 
-        console.log('==========userData========');
-        console.log(userData);
-        console.log(userData?.profileData?.profileId);
-        console.log('====================================');
-
         if (userData) {
           const verificationResp = await verifyTextIndependentProfile(
             base64Audio,
-            userData?.profileData?.profileId,
+            user?.voiceData?.voiceProfileId?.profileId,
           );
 
           console.log(verificationResp);
           setLoading(false);
 
-          if (verificationResp.success) {
-            console.log(verificationResp.score);
-            if (verificationResp?.score > 0.5) {
-              showToast('Verification Success', 'success');
+          if (verificationResp?.success) {
+            console.log(verificationResp?.score);
+            if (verificationResp?.score > 0.7) {
               SignIn();
             } else {
               // showToast('Verification Failed', 'danger');
@@ -237,47 +201,39 @@ const LoginAudioScreen = ({navigation, route}) => {
   };
 
   const SignIn = async () => {
+    setLoading(true);
+    const decryptedPass = await decryptPassword(user?.voiceData?.password);
+
+    if (!decryptedPass?.status) {
+      showToast('Verification Failed!', 'danger');
+      setLoading(false);
+      return;
+    }
+
     await auth()
-      .signInWithEmailAndPassword(userData?.email, userData?.password)
-      .then(() => {
+      .signInWithEmailAndPassword(
+        user?.voiceData?.email,
+        decryptedPass?.message,
+      )
+      .then(res => {
         console.log('User account created & signed in!');
+        showToast('Verification Success', 'success');
+        setLoading(false);
         navigation.replace('Home');
       })
       .catch(error => {
+        setLoading(false);
         if (error.code === 'auth/invalid-email') {
-          Alert.alert('Invalid Email', 'The email address is not valid.');
+          showToast('The email address is not valid.', 'success');
         } else if (error.code === 'auth/invalid-credential') {
-          Alert.alert('Invalid Credentials', 'Please check your credentials.');
+          showToast('The email address is not valid.', 'success');
         } else {
-          Alert.alert('Sign In Error', 'An error occurred during sign-in.');
+          showToast('An error occurred during sign-in.', 'success');
         }
         console.error(error);
       });
   };
 
-  const startPlayback = async () => {
-    console.log('=========== startPlayback ============');
-    console.log(audioPath);
-    console.log('====================================');
-    console.log('===========recordDuration===========');
-    console.log(recordDuration);
-    console.log(recordTime);
-    console.log('====================================');
-    setPlayback(true);
-    await recorderPlayer.startPlayer(audioPath);
-    recorderPlayer.addPlayBackListener(e => {
-      if (e.currentPosition === e.duration) {
-        setPlayback(true);
-        recorderPlayer.stopPlayer();
-      }
-    });
-  };
-
-  const stopPlayback = async () => {
-    setPlayback(false);
-    await recorderPlayer.stopPlayer();
-    recorderPlayer.removePlayBackListener();
-  };
 
   const showToast = (message: string, type: string) => {
     toast.show(message, {

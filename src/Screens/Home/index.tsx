@@ -12,6 +12,7 @@ import auth from '@react-native-firebase/auth';
 import {useDispatch} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import firestore from '@react-native-firebase/firestore';
 import FontIcon from 'react-native-vector-icons/FontAwesome6';
 import {useToast} from 'react-native-toast-notifications';
 
@@ -23,6 +24,10 @@ const Home = ({navigation}) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
+
+  console.log('===========  userData  ============');
+  console.log(userData);
+  console.log('====================================');
 
   const dispatch = useDispatch();
   const toast = useToast();
@@ -36,6 +41,20 @@ const Home = ({navigation}) => {
       // animationType: 'slide-in',
       animationType: 'zoom-in',
     });
+  };
+
+  const getVoiceData = async () => {
+    const userDoc = await firestore()
+      .collection('users')
+      .doc(userData?.email) // Document ID
+      .get();
+
+    // Check if the Voice Profile exists
+    if (userDoc?.voiceRegisterOrNot) {
+      setIsUserRegistered(true);
+    } else {
+      console.log('No user data found!');
+    }
   };
 
   const registerAudio = async () => {
@@ -85,23 +104,22 @@ const Home = ({navigation}) => {
             setUserData(null);
             dispatch(setUser(null));
             setIsAuthenticated(false);
-            navigation.replace('LoginForm');
+            navigation.replace('EmailForm');
           }
         });
         return () => unsubscribe();
       } catch (e) {
         console.log('Unable to get user');
-
         setUserData(null);
         dispatch(setUser(null));
         setIsAuthenticated(false);
-        navigation.replace('LoginForm');
+        navigation.replace('EmailForm');
       }
     } else {
       setUserData(null);
       dispatch(setUser(null));
       setIsAuthenticated(false);
-      navigation.replace('LoginForm');
+      navigation.replace('EmailForm');
     }
   }, []);
 
@@ -111,21 +129,14 @@ const Home = ({navigation}) => {
       try {
         await auth().signOut();
         dispatch(logout(true));
-        navigation.replace('LoginForm');
+        navigation.replace('EmailForm');
       } catch (error) {
         console.error('Error signing out:', error);
       }
     } else {
       dispatch(logout(true));
-      navigation.replace('LoginForm');
+      navigation.replace('EmailForm');
     }
-  };
-
-  const handleGetData = async () => {
-    const voiceData = await AsyncStorage.getItem('voiceData');
-    console.log('=========== voiceData =========');
-    console.log(voiceData);
-    console.log('========================');
   };
 
   return (

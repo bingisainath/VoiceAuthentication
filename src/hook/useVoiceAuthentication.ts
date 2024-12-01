@@ -422,7 +422,7 @@ export const useVoiceAuthentication = () => {
 
         setVerificationProfile(data);
 
-        console.log(data);
+        console.log("Profile created data => ",data);
 
         const asyncData = JSON.stringify({
           profileData: data,
