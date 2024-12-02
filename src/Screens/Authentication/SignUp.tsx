@@ -18,6 +18,8 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import {Colors} from '../../theme/Colors';
 import {encryptPassword} from '../../helpers/helperFunctions';
+import { checkInternet } from '../../helpers/checkInternet';
+import { useToast } from 'react-native-toast-notifications';
 
 export default function SignUpForm({navigation}) {
   const [click, setClick] = useState(false);
@@ -26,7 +28,28 @@ export default function SignUpForm({navigation}) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const toast = useToast();
+
+  const showToast = (message: string, type: string) => {
+    toast.show(message, {
+      type: type, //'normal | success | warning | danger | custom'
+      placement: 'top',
+      duration: 4000,
+      offset: 30,
+      // animationType: 'slide-in',
+      animationType: 'zoom-in',
+    });
+  };
+
   const SignUp = async () => {
+
+    const isConnected = await checkInternet();
+    if (!isConnected) {
+      showToast('Please Connect to internet!', 'danger');
+      navigation.navigate('EmailForm');
+      return;
+    }
+
     setLoading(true);
     try {
       // Create user with email and password

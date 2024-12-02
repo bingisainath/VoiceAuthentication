@@ -17,18 +17,17 @@ import {useToast} from 'react-native-toast-notifications';
 
 import {Colors} from '../../theme/Colors';
 import {setUser, logout, setVoiceData} from '../../redux/userSlice';
+import useVoiceAuthentication from '../../hook/useVoiceAuthentication';
 
 const Home = ({navigation}) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState(null);
+  // const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
 
-  const user = useSelector(state => state.user);
+  const {getProfileData} = useVoiceAuthentication();
 
-  console.log('=============== user =====================');
-  console.log(user?.email);
-  console.log('====================================');
+  const user = useSelector(state => state.user);
 
   const dispatch = useDispatch();
   const toast = useToast();
@@ -44,28 +43,45 @@ const Home = ({navigation}) => {
     });
   };
 
-  const getVoiceData = async () => {
+  const getVoiceData = async (email) => {
     const userDoc = await firestore()
       .collection('users')
-      .doc(user?.email) // Document ID
+      .doc(email) // Document ID
       .get();
-
-    console.log('================ userDoc ====================');
-    console.log(userDoc?._data?.voiceRegisterOrNot);
-    console.log('====================================');
 
     // Check if the Voice Profile exists
     if (userDoc?._data?.voiceRegisterOrNot) {
       setIsUserRegistered(true);
       dispatch(setVoiceData(userDoc?._data));
+      const profileData = await getProfileData(
+        userDoc?._data?.voiceProfileId?.profileId,
+      );
+
+      //updating the firebase with new values
+      if (profileData?.success) {
+        const updatedData = {
+          voiceProfileId: profileData?.data,
+        };
+        // Update user data in Firestore
+        await firestore()
+          .collection('users')
+          .doc(user?.email) // Using email as the document ID
+          .update(updatedData);
+      }
       return userDoc?._data;
     } else {
       console.log('No user data found!');
     }
   };
 
+  // useEffect(() => {
+  //   if(user?.email != ''){
+  //     getVoiceData(user?.email);
+  //   }
+  // },[user?.email]);
+
   const registerAudio = async () => {
-    const data = await getVoiceData();
+    const data = await getVoiceData(user?.email);
     if (data?.voiceRegisterOrNot) {
       Alert.alert(
         'Warning',
@@ -104,12 +120,12 @@ const Home = ({navigation}) => {
           setLoading(false);
           if (user?.email) {
             dispatch(setUser(user));
-            setUserData(user);
+            // setUserData(user);
             setIsAuthenticated(true);
-            handleUserRegistered();
+            getVoiceData(user?.email);
           } else {
-            setUserData(null);
-            dispatch(setUser(null));
+            // setUserData(null);
+            // dispatch(setUser(null));
             setIsAuthenticated(false);
             navigation.replace('EmailForm');
           }
@@ -117,14 +133,14 @@ const Home = ({navigation}) => {
         return () => unsubscribe();
       } catch (e) {
         console.log('Unable to get user');
-        setUserData(null);
-        dispatch(setUser(null));
+        // setUserData(null);
+        // dispatch(setUser(null));
         setIsAuthenticated(false);
         navigation.replace('EmailForm');
       }
     } else {
-      setUserData(null);
-      dispatch(setUser(null));
+      // setUserData(null);
+      // dispatch(setUser(null));
       setIsAuthenticated(false);
       navigation.replace('EmailForm');
     }
@@ -146,6 +162,10 @@ const Home = ({navigation}) => {
     }
   };
 
+  console.log('============== user email daita ======================');
+  console.log(user?.email);
+  console.log('====================================');
+
   return (
     <View style={styles.backgroundContainer}>
       {loading ? (
@@ -160,11 +180,15 @@ const Home = ({navigation}) => {
             <Text style={styles.headerText}>
               Secure your account with voice recognition technology.
             </Text>
-            {/* <TouchableOpacity
-              onPress={handleGetData}
-              style={{backgroundColor: 'red', padding: 10}}>
-              <Text>get Voice Data</Text>
-            </TouchableOpacity> */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 20,
+              }}>
+              <Text style={styles.headerText}>Registered Email : </Text>
+              <Text style={styles.email}>{user?.email}</Text>
+            </View>
           </View>
 
           {!isUserRegistered ? (
@@ -273,6 +297,12 @@ const styles = StyleSheet.create({
   },
   welcomeHeader: {
     fontSize: 35,
+    color: Colors.primary,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  email: {
+    fontSize: 20,
     color: Colors.primary,
     fontWeight: 'bold',
     textAlign: 'center',

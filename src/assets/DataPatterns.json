@@ -31,3 +31,20 @@
      "voiceRegisterOrNot":true
   },
 }
+
+{
+   "data":{
+      "createdDateTime":"2024-12-02T08:55:43.086Z",
+      "enrollmentStatus":"Enrolled",
+      "enrollmentsCount":5,
+      "enrollmentsLength":60.68,
+      "enrollmentsSpeechLength":30.04,
+      "lastUpdatedDateTime":"12/02/2024 09:13:10",
+      "locale":"en-us",
+      "modelVersion":"2019-11-01",
+      "profileId":"c0752392-7f88-4227-a37d-34b23082d798",
+      "remainingEnrollmentsSpeechLength":0
+   },
+   "status":"success",
+   "success":true
+}
