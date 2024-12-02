@@ -2901,6 +2901,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-community/netinfo@npm:^11.4.1":
+  version: 11.4.1
+  resolution: "@react-native-community/netinfo@npm:11.4.1"
+  peerDependencies:
+    react-native: ">=0.59"
+  checksum: d347ae522da6b8c045d6378754d4928bdf23cc85b74571b91fa8a03fa168bdac5e3c65eb97eac0dd0c7cbd20e782f99d41b090fb79ce7d815cbaf6fb5d1abe37
+  languageName: node
+  linkType: hard
+
 "@react-native-firebase/app@npm:^20.5.0":
   version: 20.5.0
   resolution: "@react-native-firebase/app@npm:20.5.0"
@@ -3709,6 +3718,7 @@ __metadata:
     "@babel/preset-env": ^7.20.0
     "@babel/runtime": ^7.20.0
     "@react-native-async-storage/async-storage": ^2.0.0
+    "@react-native-community/netinfo": ^11.4.1
     "@react-native-firebase/app": ^20.5.0
     "@react-native-firebase/auth": ^20.5.0
     "@react-native-firebase/firestore": ^20.5.0

@@ -64,6 +64,7 @@ const RegisterAudioScreen = ({navigation}) => {
   const [voiceProfileId, setVoceProfileId] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
 
   const dispatch = useDispatch();
   const toast = useToast();
@@ -81,9 +82,11 @@ const RegisterAudioScreen = ({navigation}) => {
   } = useVoiceAuthentication();
 
   const CreateAudioProfile = async () => {
+    setPageLoading(true);
     if (!user?.email) {
       // throw new Error('Email is required');
       showToast('Error Occurred While creating profile', 'danger');
+      setPageLoading(false);
       navigation.navigate('Home');
     }
 
@@ -99,9 +102,10 @@ const RegisterAudioScreen = ({navigation}) => {
           userVoiceData?._data?.voiceProfileId?.profileId,
         );
         setVoceProfileId(userVoiceData?._data?.voiceProfileId?.profileId);
+        setPageLoading(false);
       } else {
         const profileResp = await createTextIndependentVerificationProfile();
-        
+
         setVoceProfileId(profileResp?.data?.profileId);
 
         if (profileResp?.success) {
@@ -118,12 +122,15 @@ const RegisterAudioScreen = ({navigation}) => {
             .update(updatedData);
 
           showToast('Profile created Successfully', 'success');
+          setPageLoading(false);
         } else {
           showToast('Error Occurred While creating profile', 'danger');
+          setPageLoading(false);
           navigation.navigate('Home');
         }
       }
     } catch (error) {
+      setPageLoading(false);
       console.error('Error saving user data:', error);
     }
   };
@@ -196,9 +203,8 @@ const RegisterAudioScreen = ({navigation}) => {
       }
 
       // Auto-stop after 20 to 21 seconds
-      if (Math.floor(e.currentPosition / 1000) >= 12) {
-        setAttempts(attempts + 1);
-        stopRecording(path);
+      if (Math.floor(e.currentPosition / 1000) >= 21) {
+        const resp = stopRecording(path);
       }
     });
 
@@ -215,32 +221,45 @@ const RegisterAudioScreen = ({navigation}) => {
     setCurrentMetering(0);
 
     const base64Audio1 = await RNFS.readFile(path, 'base64');
-    const data = await AsyncStorage.getItem('voiceData');
-    const parsedData = JSON.parse(data);
+    // const data = await AsyncStorage.getItem('voiceData');
+    // const parsedData = JSON.parse(data);
+    setPageLoading(true);
     const enrollResp = await enrollTextIndependentProfileAudioForVerification(
       base64Audio1,
       voiceProfileId,
     );
 
+    console.log('========== enrollResp====== =');
+    console.log(enrollResp);
+    console.log('====================================');
     
 
-    console.log(enrollResp);
-
     if (enrollResp) {
+      setPageLoading(false);
       if (enrollResp?.success) {
         setEnrollResp(true);
+        setAttempts(attempts + 1);
+        showToast(enrollResp?.message, 'success');
+        return true;
       } else {
         setEnrollResp(false);
+        showToast(enrollResp?.message, 'danger');
+        return false;
       }
     } else {
+      setPageLoading(false);
       setEnrollResp(false);
+      showToast(enrollResp?.message, 'danger');
+      return false;
     }
 
-    if (enrollResp?.success) {
-      showToast(enrollResp?.message, 'success');
-    } else {
-      showToast(enrollResp?.message, 'danger');
-    }
+    // if (enrollResp?.success) {
+    //   showToast(enrollResp?.message, 'success');
+    //   return true;
+    // } else {
+    //   showToast(enrollResp?.message, 'danger');
+    //   return false;
+    // }
   };
 
   const handleLogout = async () => {
@@ -313,85 +332,98 @@ const RegisterAudioScreen = ({navigation}) => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={{position: 'absolute', top: 20, left: 20}}
-        onPress={() => {
-          navigation.goBack();
-        }}>
-        <FontAwesome5
-          name={'arrow-alt-circle-left'}
-          color={Colors.primary}
-          size={30}
-        />
-      </TouchableOpacity>
-
-      <View style={{marginBottom: 40, alignItems: 'center'}}>
-        <Text
-          style={{
-            fontSize: 25,
-            color: Colors.primary,
-            fontWeight: 'bold',
-            marginBottom: 10,
-          }}>
-          Attempt
-        </Text>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Text
-            style={{
-              fontSize: 40,
-              color: Colors.primary,
-              fontWeight: 'bold',
-              marginRight: 10,
-            }}>
-            {attempts} of 2
+    <View style={styles.outerContainer}>
+      {pageLoading ? (
+        <View style={styles.container}>
+          <ActivityIndicator size={65} color={'#80cde0'}></ActivityIndicator>
+          <Text style={{color: '#80cde0', margin: 10, fontSize: 15}}>
+            Loading ...
           </Text>
         </View>
-      </View>
+      ) : (
+        <View style={styles.container}>
+          <TouchableOpacity
+            style={{position: 'absolute', top: 20, left: 20}}
+            onPress={() => {
+              navigation.goBack();
+            }}>
+            <FontAwesome5
+              name={'arrow-alt-circle-left'}
+              color={Colors.primary}
+              size={30}
+            />
+          </TouchableOpacity>
 
-      <Text style={styles.timer}>{recording ? recordTime : '00:00:00'}</Text>
+          <View style={{marginBottom: 40, alignItems: 'center'}}>
+            <Text
+              style={{
+                fontSize: 25,
+                color: Colors.primary,
+                fontWeight: 'bold',
+                marginBottom: 10,
+              }}>
+              Attempt
+            </Text>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Text
+                style={{
+                  fontSize: 40,
+                  color: Colors.primary,
+                  fontWeight: 'bold',
+                  marginRight: 10,
+                }}>
+                {attempts} of 2
+              </Text>
+            </View>
+          </View>
 
-      <AudioWaveform currentMetering={currentMetering} />
+          <Text style={styles.timer}>
+            {recording ? recordTime : '00:00:00'}
+          </Text>
 
-      {/* <TouchableOpacity
+          <AudioWaveform currentMetering={currentMetering} />
+
+          {/* <TouchableOpacity
         onPress={recording ? stopRecording : startRecording}
         style={styles.button}>
         <Text style={styles.buttonText}>{recording ? 'pause' : 'Record'}</Text>
       </TouchableOpacity> */}
 
-      {loading ? (
-        <View style={styles.button}>
-          <ActivityIndicator size="large" color={Colors.white} />
-        </View>
-      ) : (
-        <TouchableOpacity
-          onPress={recording ? stopRecording : startRecording}
-          style={styles.button}>
-          {recording ? (
-            <Text style={styles.buttonText}>Stop</Text>
-          ) : (
-            <View style={{justifyContent: 'center', alignItems: 'center'}}>
-              <Text style={styles.buttonText}>Record</Text>
-              <Text style={styles.buttonText}>&</Text>
-              <Text style={styles.buttonText}>Verify</Text>
+          {loading ? (
+            <View style={styles.button}>
+              <ActivityIndicator size="large" color={Colors.white} />
             </View>
+          ) : (
+            <TouchableOpacity
+              onPress={recording ? stopRecording : startRecording}
+              style={styles.button}>
+              {recording ? (
+                <Text style={styles.buttonText}>Stop</Text>
+              ) : (
+                <View style={{justifyContent: 'center', alignItems: 'center'}}>
+                  <Text style={styles.buttonText}>Record</Text>
+                  <Text style={styles.buttonText}>&</Text>
+                  <Text style={styles.buttonText}>Verify</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+          <View
+            style={{
+              bottom: 70,
+              position: 'absolute',
+              flexDirection: 'row',
+              paddingHorizontal: 20,
+            }}>
+            <Text style={[styles.descriptionText, {fontWeight: 'bold'}]}>
+              Note :
+            </Text>
+            <Text style={styles.descriptionText}>
+              Please speak clearly while recording the audio
+            </Text>
+          </View>
+        </View>
       )}
-      <View
-        style={{
-          bottom: 70,
-          position: 'absolute',
-          flexDirection: 'row',
-          paddingHorizontal: 20,
-        }}>
-        <Text style={[styles.descriptionText, {fontWeight: 'bold'}]}>
-          Note :
-        </Text>
-        <Text style={styles.descriptionText}>
-          Please speak clearly while recording the audio
-        </Text>
-      </View>
 
       {/* <TouchableOpacity
         onPress={deleteVoiceProfile}
@@ -405,6 +437,9 @@ const RegisterAudioScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

@@ -13,10 +13,7 @@ export const userSlice = createSlice({
   initialState,
   reducers: {
     setUser: (state, action) => {
-      // state.uid = action.payload.uid;
-      // state.name = action.payload.displayName;
       state.email = action?.payload?.email;
-      // state.profile_pic = action.payload.photoURL;
     },
     setVoiceData: (state, action) => {
       state.voiceData = action.payload;

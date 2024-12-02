@@ -24,6 +24,7 @@ import {useToast} from 'react-native-toast-notifications';
 
 import {Colors} from '../../../theme/Colors';
 import {setUser, setVoiceData} from '../../../redux/userSlice';
+import {checkInternet} from '../../../helpers/checkInternet';
 
 export default function PasswordForm({navigation, route}) {
   const [click, setClick] = useState(false);
@@ -35,6 +36,16 @@ export default function PasswordForm({navigation, route}) {
   const toast = useToast();
 
   const getVoiceData = async () => {
+    const isConnected = await checkInternet();
+    console.log('====================================');
+    console.log("checking con", isConnected);
+    console.log('====================================');
+    if (!isConnected) {
+      showToast('Please Connect to internet!', 'danger');
+      navigation.navigate('EmailForm');
+      return;
+    }
+
     const userDoc = await firestore()
       .collection('users')
       .doc(route?.params?.email) // Document ID
@@ -54,6 +65,13 @@ export default function PasswordForm({navigation, route}) {
   }, []);
 
   const SignIn = async () => {
+    const isConnected = await checkInternet();
+    if (!isConnected) {
+      showToast('Please Connect to internet!', 'danger');
+      navigation.navigate('EmailForm');
+      return;
+    }
+
     if (password == '') {
       showToast('Please enter a valid password', 'danger');
       return;
@@ -63,7 +81,7 @@ export default function PasswordForm({navigation, route}) {
       .signInWithEmailAndPassword(route?.params?.email, password)
       .then(() => {
         console.log('User signed in successfully!');
-        dispatch(setUser(route?.params?.email))
+        dispatch(setUser(route?.params?.email));
         setLoading(false);
         navigation.replace('Home');
       })
