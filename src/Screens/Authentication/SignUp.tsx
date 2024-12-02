@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -81,7 +82,11 @@ export default function SignUpForm({navigation}) {
       keyboardVerticalOffset={80}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <SafeAreaView style={styles.container}>
-          {/* <Image source={logo} style={styles.image} resizeMode="contain" /> */}
+          <Image
+            source={require('../../assets/images/logo2.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Register</Text>
           <View style={styles.inputView}>
             <TextInput
@@ -121,15 +126,7 @@ export default function SignUpForm({navigation}) {
                 <Text style={styles.buttonText}>REGISTER</Text>
               </TouchableOpacity>
             )}
-            {/* <TouchableOpacity style={styles.button} onPress={SignUp}>
-          <Text style={styles.buttonText}>Register</Text>
-        </TouchableOpacity> */}
           </View>
-
-          {/* <Text style={styles.footerText}>
-        <Text style={styles.signup}> login</Text>
-      </Text> */}
-
           <TouchableOpacity
             style={styles.footerText}
             onPress={() => {
@@ -150,13 +147,19 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    // justifyContent: 'space-between',
+    justifyContent: 'space-between',
   },
   container: {
     flex: 1,
     alignItems: 'center',
     paddingTop: 70,
     backgroundColor: '#152529',
+  },
+  image: {
+    alignSelf: 'center',
+    width: 200, // Adjust width as needed
+    height: 200, // Adjust height as needed
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 40,
@@ -165,7 +168,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 40,
     color: '#80cde0',
-    marginBottom: 30,
   },
   inputView: {
     gap: 25,
@@ -220,6 +222,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 50,
     marginTop: 20,
+    marginBottom: 70,
   },
   optionsText: {
     textAlign: 'center',

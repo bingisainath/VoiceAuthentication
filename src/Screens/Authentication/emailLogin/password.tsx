@@ -20,9 +20,10 @@ import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
+import {useToast} from 'react-native-toast-notifications';
 
 import {Colors} from '../../../theme/Colors';
-import {setVoiceData} from '../../../redux/userSlice';
+import {setUser, setVoiceData} from '../../../redux/userSlice';
 
 export default function PasswordForm({navigation, route}) {
   const [click, setClick] = useState(false);
@@ -31,6 +32,7 @@ export default function PasswordForm({navigation, route}) {
   const [profileExists, setProfileExits] = useState(false);
 
   const dispatch = useDispatch();
+  const toast = useToast();
 
   const getVoiceData = async () => {
     const userDoc = await firestore()
@@ -52,11 +54,16 @@ export default function PasswordForm({navigation, route}) {
   }, []);
 
   const SignIn = async () => {
+    if (password == '') {
+      showToast('Please enter a valid password', 'danger');
+      return;
+    }
     setLoading(true);
     await auth()
       .signInWithEmailAndPassword(route?.params?.email, password)
       .then(() => {
-        console.log('User account created & signed in!');
+        console.log('User signed in successfully!');
+        dispatch(setUser(route?.params?.email))
         setLoading(false);
         navigation.replace('Home');
       })
@@ -78,10 +85,10 @@ export default function PasswordForm({navigation, route}) {
   const handleLoginWithVoice = async () => {
     try {
       // Fetch the voiceData from AsyncStorage
-      const voiceData = await AsyncStorage.getItem('voiceData');
+      // const voiceData = await AsyncStorage.getItem('voiceData');
 
-      if (voiceData) {
-        navigation.navigate('LoginAudioScreen', {voiceData: voiceData});
+      if (profileExists) {
+        navigation.navigate('LoginAudioScreen');
       } else {
         // Show alert if no voice data is found in AsyncStorage
         Alert.alert('No Voice Data', 'No voice profile data found.');
@@ -92,6 +99,17 @@ export default function PasswordForm({navigation, route}) {
     }
   };
 
+  const showToast = (message: string, type: string) => {
+    toast.show(message, {
+      type: type, //'normal | success | warning | danger | custom'
+      placement: 'top',
+      duration: 4000,
+      offset: 30,
+      // animationType: 'slide-in',
+      animationType: 'zoom-in',
+    });
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoidingView}
@@ -99,12 +117,22 @@ export default function PasswordForm({navigation, route}) {
       keyboardVerticalOffset={60}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <SafeAreaView style={styles.container}>
-          {/* <Image source={logo} style={styles.image} resizeMode="contain" /> */}
+          <Image
+            source={require('../../../assets/images/logo2.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Login</Text>
           <View style={styles.emailContainer}>
-            <Text style={styles.emailText}>sai@gmail.com</Text>
+            <Text style={styles.emailText}>{route?.params?.email}</Text>
           </View>
           <View style={styles.inputView}>
+            <FontAwesome5
+              name={'lock'}
+              size={25}
+              color={'#80cde0'}
+              style={styles.userIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="PASSWORD"
@@ -116,15 +144,15 @@ export default function PasswordForm({navigation, route}) {
             />
           </View>
           <View style={styles.rememberView}>
-            <View style={styles.switch}>
+            {/* <View style={styles.switch}>
               <Switch
                 value={click}
                 onValueChange={setClick}
                 trackColor={{true: 'green', false: 'gray'}}
               />
               <Text style={styles.rememberText}>Remember Me</Text>
-            </View>
-            <View>
+            </View> */}
+            <View style={styles.forgetView}>
               <Pressable onPress={() => Alert.alert('Forget Password!')}>
                 <Text style={styles.forgetText}>Forgot Password?</Text>
               </Pressable>
@@ -197,8 +225,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    paddingTop: 70,
+    paddingTop: 50,
     backgroundColor: '#152529',
+  },
+  image: {
+    width: 200, // Adjust width as needed
+    height: 200, // Adjust height as needed
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 40,
@@ -207,7 +240,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 40,
     color: '#80cde0',
-    marginBottom: 20,
+    // marginBottom: 10,
   },
   emailContainer: {
     margin: 10,
@@ -219,17 +252,23 @@ const styles = StyleSheet.create({
     color: '#80cde0',
   },
   inputView: {
-    gap: 25,
-    width: '100%',
-    paddingHorizontal: 40,
-    marginBottom: 5,
-  },
-  input: {
-    height: 50,
-    paddingHorizontal: 20,
+    width: '80%',
+    paddingHorizontal: 10,
     borderColor: '#80cde0',
     borderWidth: 1,
     borderRadius: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    // paddingVertical: 5,
+  },
+  userIcon: {
+    padding: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    paddingHorizontal: 10,
+    color: '#fff',
   },
   rememberView: {
     width: '100%',
@@ -249,8 +288,11 @@ const styles = StyleSheet.create({
   rememberText: {
     fontSize: 13,
   },
+  forgetView: {
+    marginLeft: '65%',
+  },
   forgetText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#80cde0',
   },
   button: {

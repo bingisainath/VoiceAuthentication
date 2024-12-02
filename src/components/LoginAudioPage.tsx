@@ -20,7 +20,8 @@ import firestore from '@react-native-firebase/firestore';
 import {useVoiceAuthentication} from '../hook/useVoiceAuthentication'; // Assuming this hook is correctly implemented for Azure API
 import {Colors} from '../theme/Colors';
 import {decryptPassword} from '../helpers/helperFunctions';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
+import { setUser } from '../redux/userSlice';
 // import Navigation from '../navigation';
 
 // const baseApi = 'https://centralindia.api.cognitive.microsoft.com'; // Replace with your Azure Cognitive Service endpoint
@@ -50,7 +51,7 @@ const AudioWaveform = ({currentMetering}) => {
   );
 };
 
-const LoginAudioScreen = ({navigation, route}) => {
+const LoginAudioScreen = ({navigation}) => {
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState('00:00:00');
   const [audioPath, setAudioPath] = useState(null);
@@ -60,12 +61,9 @@ const LoginAudioScreen = ({navigation, route}) => {
   const [loading, setLoading] = useState(false);
 
   const user = useSelector(state => state.user);
-
   const toast = useToast();
-
   const recorderPlayer = useRef(new AudioRecorderPlayer()).current;
-
-  const userData = JSON.parse(route?.params?.voiceData);
+  const dispatch = useDispatch();
 
   const {
     verifyTextIndependentProfile,
@@ -118,10 +116,8 @@ const LoginAudioScreen = ({navigation, route}) => {
           setCurrentMetering(e.currentMetering);
         }
 
-        // Auto-stop after 20 to 21 seconds
         if (Math.floor(e.currentPosition / 1000) >= 6) {
           stopRecording(path);
-          // verifyProfile();
         }
       });
 
@@ -161,7 +157,7 @@ const LoginAudioScreen = ({navigation, route}) => {
       if (path) {
         const base64Audio = await RNFS.readFile(path, 'base64');
 
-        if (userData) {
+        if (user) {
           const verificationResp = await verifyTextIndependentProfile(
             base64Audio,
             user?.voiceData?.voiceProfileId?.profileId,
@@ -172,7 +168,7 @@ const LoginAudioScreen = ({navigation, route}) => {
 
           if (verificationResp?.success) {
             console.log(verificationResp?.score);
-            if (verificationResp?.score > 0.7) {
+            if (verificationResp?.score >= 0.65) {
               SignIn();
             } else {
               // showToast('Verification Failed', 'danger');
@@ -218,6 +214,7 @@ const LoginAudioScreen = ({navigation, route}) => {
       .then(res => {
         console.log('User account created & signed in!');
         showToast('Verification Success', 'success');
+        dispatch(setUser(user?.voiceData?.email))
         setLoading(false);
         navigation.replace('Home');
       })

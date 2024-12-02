@@ -222,6 +222,8 @@ const RegisterAudioScreen = ({navigation}) => {
       voiceProfileId,
     );
 
+    
+
     console.log(enrollResp);
 
     if (enrollResp) {
@@ -258,10 +260,9 @@ const RegisterAudioScreen = ({navigation}) => {
   };
 
   useEffect(() => {
-    // getProfileDataById();
     if (attempts >= 2 && enrollResp) {
       if (enrollResp) {
-        showToast('Enrollment Success', 'success');
+        // showToast('Enrollment Success', 'success');
         Alert.alert(
           'Message',
           'Successfully Enrolled Your Voice',
@@ -272,7 +273,7 @@ const RegisterAudioScreen = ({navigation}) => {
               style: 'cancel',
             },
             {
-              text: 'Ok',
+              text: 'logout',
               onPress: () => handleLogout(),
             },
           ],
@@ -299,23 +300,6 @@ const RegisterAudioScreen = ({navigation}) => {
     }
   }, [enrollResp, attempts]);
 
-  // const startPlayback = async (audioNo: Number) => {
-  //   audioNo == 1 ? setPlayback1(true) : setPlayback2(true);
-  //   await recorderPlayer.startPlayer(audioNo == 1 ? audioPath1 : audioPath2);
-  //   recorderPlayer.addPlayBackListener(e => {
-  //     if (e.currentPosition === e.duration) {
-  //       audioNo == 1 ? setPlayback1(true) : setPlayback2(true);
-  //       recorderPlayer.stopPlayer();
-  //     }
-  //   });
-  // };
-
-  // const stopPlayback = async audioNo => {
-  //   audioNo == 1 ? setPlayback1(false) : setPlayback2(false);
-  //   await recorderPlayer.stopPlayer();
-  //   recorderPlayer.removePlayBackListener();
-  // };
-
   const deleteVoiceProfile = async () => {
     try {
       await AsyncStorage.removeItem('voiceData');
@@ -327,50 +311,6 @@ const RegisterAudioScreen = ({navigation}) => {
       console.error('Error deleting user profile:', error);
     }
   };
-
-  // const [tempData, setTempData] = useState({});
-
-  // const loadVoiceData = async () => {
-  //   const data = await AsyncStorage.getItem('voiceData');
-  //   console.log('================ load voice data ====================');
-  //   console.log(data);
-  //   console.log('====================================');
-  //   await setTempData(data);
-  // };
-
-  // useEffect(() => {
-  //   loadVoiceData();
-  // }, []);
-
-  // const handleCreateProfile = async () => {
-  //   const profileResp = await createTextIndependentVerificationProfile();
-  //   setTempData(profileResp);
-  //   console.log('========== handleCreateProfile ===========');
-  //   console.log(profileResp);
-  //   console.log('====================================');
-  // };
-
-  // const handleEnrollProfile = async () => {
-  //   console.log('=========== tempData ==========');
-  //   console.log(tempData?.data);
-  //   console.log('====================================');
-
-  //   const assetPath = 'girl_voice_2.mp3';
-  //   const audioData = await RNFetchBlob.fs.readFile(
-  //     RNFetchBlob.fs.asset(assetPath),
-  //     'base64',
-  //   );
-  //   // const blob = Buffer.from(audioData, 'base64');
-
-  //   const enrollResp = await enrollTextIndependentProfileAudioForVerification(
-  //     audioData,
-  //     tempData?.data?.profileId,
-  //   );
-
-  //   console.log('========== enrollResp ==========');
-  //   console.log(enrollResp);
-  //   console.log('====================================');
-  // };
 
   return (
     <View style={styles.container}>
@@ -438,70 +378,6 @@ const RegisterAudioScreen = ({navigation}) => {
           )}
         </TouchableOpacity>
       )}
-
-      {/* <View style={{flexDirection: 'row'}}>
-        <TouchableOpacity
-          onPress={handleCreateProfile}
-          style={{backgroundColor: 'green', padding: 10, marginRight: 10}}>
-          <Text>Create Audio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleEnrollProfile}
-          style={{backgroundColor: 'blue', padding: 10, marginRight: 10}}>
-          <Text>Enroll Audio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={getProfileDataById}
-          style={{backgroundColor: 'blue', padding: 10}}>
-          <Text>get Voice Data</Text>
-        </TouchableOpacity>
-      </View> */}
-
-      {/* <View
-        style={{
-          flexDirection: 'row',
-          height: '10%',
-          alignItems: 'center',
-        }}>
-        {audioPath1 && !recording && (
-          <TouchableOpacity
-            onPress={playback1 ? () => stopPlayback(1) : () => startPlayback(1)}
-            style={styles.playButton}>
-            <FontAwesome5
-              name={playback1 ? 'pause' : 'play'}
-              color={'black'}
-              size={30}
-            />
-            <Text style={{color: 'red'}}> A1 </Text>
-          </TouchableOpacity>
-        )}
-        {audioPath2 && !recording && (
-          <TouchableOpacity
-            onPress={playback2 ? () => stopPlayback(2) : () => startPlayback(2)}
-            style={styles.playButton}>
-            <FontAwesome5
-              name={playback2 ? 'pause' : 'play'}
-              color={'black'}
-              size={30}
-            />
-            <Text style={{color: 'red'}}> A2 </Text>
-          </TouchableOpacity>
-        )}
-      </View> */}
-
-      {/* <TouchableOpacity
-        onPress={enrollAudio}
-        style={{backgroundColor: 'lightblue', padding: 10}}>
-        <Text style={{color: '#152529', fontWeight: 'bold'}}>
-          Enroll Audio Profile
-        </Text>
-      </TouchableOpacity> */}
-
-      {/* <Text style={styles.infoText}>
-        {mode === 'enroll'
-          ? `Remaining Attempts : ${attempts}`
-          : `Verification Result: ${verificationResult}`}
-      </Text> */}
       <View
         style={{
           bottom: 70,
@@ -517,13 +393,13 @@ const RegisterAudioScreen = ({navigation}) => {
         </Text>
       </View>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={deleteVoiceProfile}
         style={styles.deleteAudioBtn}>
         <Text style={{color: Colors.white, fontWeight: 'bold'}}>
           Delete Audio Profile
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
