@@ -50,17 +50,18 @@ const AudioWaveform = ({currentMetering}) => {
 };
 
 const RegisterAudioScreen = ({navigation}) => {
-  const [profile, setProfile] = useState({});
+  // const [profile, setProfile] = useState({});
   const [recording, setRecording] = useState(false);
   const [recordTime, setRecordTime] = useState('00:00');
-  const [audioPath1, setAudioPath1] = useState(null);
-  const [audioPath2, setAudioPath2] = useState(null);
-  const [playback1, setPlayback1] = useState(false);
-  const [playback2, setPlayback2] = useState(false);
+  // const [audioPath1, setAudioPath1] = useState(null);
+  // const [audioPath2, setAudioPath2] = useState(null);
+  // const [playback1, setPlayback1] = useState(false);
+  // const [playback2, setPlayback2] = useState(false);
   const [currentMetering, setCurrentMetering] = useState(0);
-  const [mode, setMode] = useState('enroll'); // Mode to decide between enroll/verify
+  // const [mode, setMode] = useState('enroll'); // Mode to decide between enroll/verify
   const [recordDuration, setRecordDuration] = useState(0); // Track the recording duration
   const [attempts, setAttempts] = useState(0); // Track recording attempts
+  const [voiceProfileId, setVoceProfileId] = useState('');
 
   const [loading, setLoading] = useState(false);
 
@@ -80,24 +81,50 @@ const RegisterAudioScreen = ({navigation}) => {
   } = useVoiceAuthentication();
 
   const CreateAudioProfile = async () => {
-    const profileData = await AsyncStorage.getItem('voiceData');
-    console.log('=========== profileData ===========');
-    console.log(profileData);
-    console.log('====================================');
-    if (!profileData) {
-      const profileResp = await createTextIndependentVerificationProfile();
-      console.log('====================================');
-      console.log(profileResp);
-      console.log('====================================');
-      if (profileResp?.success) {
-        showToast('Profile created Successfully', 'success');
-        setProfile(profileResp);
+    if (!user?.email) {
+      // throw new Error('Email is required');
+      showToast('Error Occurred While creating profile', 'danger');
+      navigation.navigate('Home');
+    }
+
+    try {
+      const userVoiceData = await firestore()
+        .collection('users')
+        .doc(user?.email)
+        .get();
+
+      if (userVoiceData?._data?.voiceRegisterOrNot) {
+        console.log(
+          'User Data:',
+          userVoiceData?._data?.voiceProfileId?.profileId,
+        );
+        setVoceProfileId(userVoiceData?._data?.voiceProfileId?.profileId);
       } else {
-        showToast('Error Occurred While creating profile', 'danger');
-        navigation.navigate('Home');
+        const profileResp = await createTextIndependentVerificationProfile();
+        
+        setVoceProfileId(profileResp?.data?.profileId);
+
+        if (profileResp?.success) {
+          // Prepare the fields to update
+          const updatedData = {
+            voiceProfileId: profileResp.data, // Update voiceProfileId if provided
+            voiceRegisterOrNot: true, // Update the boolean flag
+          };
+
+          // Update user data in Firestore
+          await firestore()
+            .collection('users')
+            .doc(user?.email) // Using email as the document ID
+            .update(updatedData);
+
+          showToast('Profile created Successfully', 'success');
+        } else {
+          showToast('Error Occurred While creating profile', 'danger');
+          navigation.navigate('Home');
+        }
       }
-    } else {
-      console.log('Profile Already Created');
+    } catch (error) {
+      console.error('Error saving user data:', error);
     }
   };
 
@@ -169,33 +196,16 @@ const RegisterAudioScreen = ({navigation}) => {
       }
 
       // Auto-stop after 20 to 21 seconds
-      if (Math.floor(e.currentPosition / 1000) >= 23) {
+      if (Math.floor(e.currentPosition / 1000) >= 12) {
         setAttempts(attempts + 1);
         stopRecording(path);
       }
     });
 
-    // if (attempts == 0) {
-    //   setAudioPath1(path);
-    // } else {
-    //   setAudioPath2(path);
-    // }
-
     setRecording(true);
   };
 
-  // const pauseRecording = async () => {
-  //   await recorderPlayer.pauseRecorder();
-  //   setRecording(false);
-  // };
-
-  // const resumeRecording = async () => {
-  //   await recorderPlayer.resumeRecorder();
-  //   setRecording(true);
-  // };
-
   const [enrollResp, setEnrollResp] = useState(true);
-  // const [enrollResp2, setEnrollResp2] = useState({});
 
   const stopRecording = async path => {
     setRecording(false);
@@ -209,8 +219,10 @@ const RegisterAudioScreen = ({navigation}) => {
     const parsedData = JSON.parse(data);
     const enrollResp = await enrollTextIndependentProfileAudioForVerification(
       base64Audio1,
-      parsedData?.profileData?.profileId,
+      voiceProfileId,
     );
+
+    
 
     console.log(enrollResp);
 
@@ -229,57 +241,7 @@ const RegisterAudioScreen = ({navigation}) => {
     } else {
       showToast(enrollResp?.message, 'danger');
     }
-
-    // if (attempts == 0) {
-    //   const base64Audio1 = await RNFS.readFile(path, 'base64');
-    //   const data = await AsyncStorage.getItem('voiceData');
-    //   const parsedData = JSON.parse(data);
-    //   console.log('================= temp Data ===================');
-    //   console.log(parsedData?.profileData);
-    //   console.log('====================================');
-    //   const enrollResp = await enrollTextIndependentProfileAudioForVerification(
-    //     base64Audio1,
-    //     parsedData?.profileData?.profileId,
-    //   );
-    //   setEnrollResp1(enrollResp);
-    // } else {
-    //   const base64Audio1 = await RNFS.readFile(audioPath1, 'base64');
-    //   const data = await AsyncStorage.getItem('voiceData');
-    //   const parsedData = JSON.parse(data);
-    //   console.log('================= temp Data ===================');
-    //   console.log(parsedData?.profileId);
-    //   console.log('====================================');
-    //   const enrollResp = await enrollTextIndependentProfileAudioForVerification(
-    //     base64Audio1,
-    //     parsedData?.profileId?.profileId,
-    //   );
-    //   setEnrollResp2(enrollResp);
-    // }
   };
-
-  // const createProfile = async () => {
-  //   setLoading(true);
-  //   const base64Audio1 = await RNFS.readFile(audioPath1, 'base64');
-  //   const base64Audio2 = await RNFS.readFile(audioPath2, 'base64');
-  //   const createProfileResp = await createTextIndependentVerificationProfile(
-  //     base64Audio1,
-  //     base64Audio2,
-  //   );
-  //   if (createProfileResp?.success) {
-  //     setLoading(false);
-  //     Alert.alert('Success', createProfileResp?.data);
-  //   } else {
-  //     setLoading(false);
-  //     Alert.alert('Error', createProfileResp?.data);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (attempts >= 2) {
-  //     showToast('Voice Enrollment Success', 'success');
-  //     handleLogout();
-  //   }
-  // }, [attempts]);
 
   const handleLogout = async () => {
     const currentUser = auth().currentUser;
@@ -287,50 +249,20 @@ const RegisterAudioScreen = ({navigation}) => {
       try {
         await auth().signOut();
         dispatch(logout(true));
-        navigation.replace('LoginForm');
+        navigation.replace('EmailForm');
       } catch (error) {
         console.error('Error signing out:', error);
       }
     } else {
       dispatch(logout(true));
-      navigation.replace('LoginForm');
-    }
-  };
-
-  const getProfileDataById = async () => {
-    const data = await AsyncStorage.getItem('voiceData');
-    if (data) {
-      const parsedData = JSON.parse(data);
-      console.log('================= temp Data ===================');
-      console.log(parsedData?.profileId);
-      console.log('====================================');
-      const profileDataResp = await getProfileData(
-        parsedData?.profileData?.profileId,
-      );
-      console.log('===========profileDataResp========');
-      console.log(profileDataResp);
-      console.log('====================================');
-      if (profileDataResp?.success) {
-        const asyncData = JSON.stringify({
-          profileData: profileDataResp?.data,
-          email: user.email,
-          password: '123456',
-        });
-        await AsyncStorage.setItem('voiceData', asyncData);
-      } else {
-        console.log('Error Getting Profile Data');
-      }
+      navigation.replace('EmailForm');
     }
   };
 
   useEffect(() => {
-    console.log('================= 1 & 2 responses ===================');
-    console.log(enrollResp);
-    console.log('====================================');
-    getProfileDataById();
     if (attempts >= 2 && enrollResp) {
       if (enrollResp) {
-        showToast('Enrollment Success', 'success');
+        // showToast('Enrollment Success', 'success');
         Alert.alert(
           'Message',
           'Successfully Enrolled Your Voice',
@@ -341,7 +273,7 @@ const RegisterAudioScreen = ({navigation}) => {
               style: 'cancel',
             },
             {
-              text: 'Ok',
+              text: 'logout',
               onPress: () => handleLogout(),
             },
           ],
@@ -368,23 +300,6 @@ const RegisterAudioScreen = ({navigation}) => {
     }
   }, [enrollResp, attempts]);
 
-  const startPlayback = async (audioNo: Number) => {
-    audioNo == 1 ? setPlayback1(true) : setPlayback2(true);
-    await recorderPlayer.startPlayer(audioNo == 1 ? audioPath1 : audioPath2);
-    recorderPlayer.addPlayBackListener(e => {
-      if (e.currentPosition === e.duration) {
-        audioNo == 1 ? setPlayback1(true) : setPlayback2(true);
-        recorderPlayer.stopPlayer();
-      }
-    });
-  };
-
-  const stopPlayback = async audioNo => {
-    audioNo == 1 ? setPlayback1(false) : setPlayback2(false);
-    await recorderPlayer.stopPlayer();
-    recorderPlayer.removePlayBackListener();
-  };
-
   const deleteVoiceProfile = async () => {
     try {
       await AsyncStorage.removeItem('voiceData');
@@ -395,50 +310,6 @@ const RegisterAudioScreen = ({navigation}) => {
     } catch (error) {
       console.error('Error deleting user profile:', error);
     }
-  };
-
-  const [tempData, setTempData] = useState({});
-
-  const loadVoiceData = async () => {
-    const data = await AsyncStorage.getItem('voiceData');
-    console.log('================ load voice data ====================');
-    console.log(data);
-    console.log('====================================');
-    await setTempData(data);
-  };
-
-  useEffect(() => {
-    loadVoiceData();
-  }, []);
-
-  // const handleCreateProfile = async () => {
-  //   const profileResp = await createTextIndependentVerificationProfile();
-  //   setTempData(profileResp);
-  //   console.log('========== handleCreateProfile ===========');
-  //   console.log(profileResp);
-  //   console.log('====================================');
-  // };
-
-  const handleEnrollProfile = async () => {
-    console.log('=========== tempData ==========');
-    console.log(tempData?.data);
-    console.log('====================================');
-
-    const assetPath = 'girl_voice_2.mp3';
-    const audioData = await RNFetchBlob.fs.readFile(
-      RNFetchBlob.fs.asset(assetPath),
-      'base64',
-    );
-    // const blob = Buffer.from(audioData, 'base64');
-
-    const enrollResp = await enrollTextIndependentProfileAudioForVerification(
-      audioData,
-      tempData?.data?.profileId,
-    );
-
-    console.log('========== enrollResp ==========');
-    console.log(enrollResp);
-    console.log('====================================');
   };
 
   return (
@@ -507,70 +378,6 @@ const RegisterAudioScreen = ({navigation}) => {
           )}
         </TouchableOpacity>
       )}
-
-      {/* <View style={{flexDirection: 'row'}}>
-        <TouchableOpacity
-          onPress={handleCreateProfile}
-          style={{backgroundColor: 'green', padding: 10, marginRight: 10}}>
-          <Text>Create Audio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleEnrollProfile}
-          style={{backgroundColor: 'blue', padding: 10, marginRight: 10}}>
-          <Text>Enroll Audio</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={getProfileDataById}
-          style={{backgroundColor: 'blue', padding: 10}}>
-          <Text>get Voice Data</Text>
-        </TouchableOpacity>
-      </View> */}
-
-      {/* <View
-        style={{
-          flexDirection: 'row',
-          height: '10%',
-          alignItems: 'center',
-        }}>
-        {audioPath1 && !recording && (
-          <TouchableOpacity
-            onPress={playback1 ? () => stopPlayback(1) : () => startPlayback(1)}
-            style={styles.playButton}>
-            <FontAwesome5
-              name={playback1 ? 'pause' : 'play'}
-              color={'black'}
-              size={30}
-            />
-            <Text style={{color: 'red'}}> A1 </Text>
-          </TouchableOpacity>
-        )}
-        {audioPath2 && !recording && (
-          <TouchableOpacity
-            onPress={playback2 ? () => stopPlayback(2) : () => startPlayback(2)}
-            style={styles.playButton}>
-            <FontAwesome5
-              name={playback2 ? 'pause' : 'play'}
-              color={'black'}
-              size={30}
-            />
-            <Text style={{color: 'red'}}> A2 </Text>
-          </TouchableOpacity>
-        )}
-      </View> */}
-
-      {/* <TouchableOpacity
-        onPress={enrollAudio}
-        style={{backgroundColor: 'lightblue', padding: 10}}>
-        <Text style={{color: '#152529', fontWeight: 'bold'}}>
-          Enroll Audio Profile
-        </Text>
-      </TouchableOpacity> */}
-
-      {/* <Text style={styles.infoText}>
-        {mode === 'enroll'
-          ? `Remaining Attempts : ${attempts}`
-          : `Verification Result: ${verificationResult}`}
-      </Text> */}
       <View
         style={{
           bottom: 70,
@@ -586,13 +393,13 @@ const RegisterAudioScreen = ({navigation}) => {
         </Text>
       </View>
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={deleteVoiceProfile}
         style={styles.deleteAudioBtn}>
         <Text style={{color: Colors.white, fontWeight: 'bold'}}>
           Delete Audio Profile
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };

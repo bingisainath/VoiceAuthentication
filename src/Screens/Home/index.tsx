@@ -1,4 +1,3 @@
-
 import React, {useEffect, useState} from 'react';
 import {
   View,
@@ -9,20 +8,27 @@ import {
   Alert,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import firestore from '@react-native-firebase/firestore';
 import FontIcon from 'react-native-vector-icons/FontAwesome6';
 import {useToast} from 'react-native-toast-notifications';
 
 import {Colors} from '../../theme/Colors';
-import {setUser, logout} from '../../redux/userSlice';
+import {setUser, logout, setVoiceData} from '../../redux/userSlice';
 
 const Home = ({navigation}) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isUserRegistered, setIsUserRegistered] = useState(false);
+
+  const user = useSelector(state => state.user);
+
+  console.log('=============== user =====================');
+  console.log(user?.email);
+  console.log('====================================');
 
   const dispatch = useDispatch();
   const toast = useToast();
@@ -38,9 +44,29 @@ const Home = ({navigation}) => {
     });
   };
 
+  const getVoiceData = async () => {
+    const userDoc = await firestore()
+      .collection('users')
+      .doc(user?.email) // Document ID
+      .get();
+
+    console.log('================ userDoc ====================');
+    console.log(userDoc?._data?.voiceRegisterOrNot);
+    console.log('====================================');
+
+    // Check if the Voice Profile exists
+    if (userDoc?._data?.voiceRegisterOrNot) {
+      setIsUserRegistered(true);
+      dispatch(setVoiceData(userDoc?._data));
+      return userDoc?._data;
+    } else {
+      console.log('No user data found!');
+    }
+  };
+
   const registerAudio = async () => {
-    const VoiceData = await AsyncStorage.getItem('voiceData');
-    if (VoiceData) {
+    const data = await getVoiceData();
+    if (data?.voiceRegisterOrNot) {
       Alert.alert(
         'Warning',
         'You already have a voice profile registered. Do you want to update it?',
@@ -85,23 +111,22 @@ const Home = ({navigation}) => {
             setUserData(null);
             dispatch(setUser(null));
             setIsAuthenticated(false);
-            navigation.replace('LoginForm');
+            navigation.replace('EmailForm');
           }
         });
         return () => unsubscribe();
       } catch (e) {
         console.log('Unable to get user');
-
         setUserData(null);
         dispatch(setUser(null));
         setIsAuthenticated(false);
-        navigation.replace('LoginForm');
+        navigation.replace('EmailForm');
       }
     } else {
       setUserData(null);
       dispatch(setUser(null));
       setIsAuthenticated(false);
-      navigation.replace('LoginForm');
+      navigation.replace('EmailForm');
     }
   }, []);
 
@@ -111,21 +136,14 @@ const Home = ({navigation}) => {
       try {
         await auth().signOut();
         dispatch(logout(true));
-        navigation.replace('LoginForm');
+        navigation.replace('EmailForm');
       } catch (error) {
         console.error('Error signing out:', error);
       }
     } else {
       dispatch(logout(true));
-      navigation.replace('LoginForm');
+      navigation.replace('EmailForm');
     }
-  };
-
-  const handleGetData = async () => {
-    const voiceData = await AsyncStorage.getItem('voiceData');
-    console.log('=========== voiceData =========');
-    console.log(voiceData);
-    console.log('========================');
   };
 
   return (
